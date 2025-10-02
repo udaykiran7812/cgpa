@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CGPA Calculator & Predictor</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for Inter font and general aesthetics */
+        :root {
+            --primary-color: #2563EB; /* Blue-600 */
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+            color: #1f2937;
+        }
+        .card {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .result-box {
+            background-color: #e0f2fe; /* Light Blue-100 */
+            border-left: 6px solid var(--primary-color);
+        }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen">
+
+    <div class="max-w-4xl mx-auto space-y-8">
+        <header class="text-center">
+            <h1 class="text-4xl font-extrabold text-gray-800 mb-2">Academic Calculator</h1>
+            <p class="text-xl text-gray-600">CGPA & Future SGPA Prediction Tool</p>
+        </header>
+
+        <!-- Main CGPA Input and Display -->
+        <div id="cgpa-calculator" class="bg-white p-6 md:p-8 rounded-xl card transition duration-300">
+            <h2 class="text-2xl font-bold mb-6 text-gray-700 border-b pb-3">Semester Data Input</h2>
+
+            <div id="semesters-container" class="space-y-4 mb-6">
+                <!-- Semester rows will be inserted here -->
+            </div>
+
+            <button id="add-semester-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-200">
+                + Add Semester
+            </button>
+
+            <!-- CGPA Result -->
+            <div class="result-box mt-8 p-4 md:p-6 rounded-lg text-gray-800">
+                <p class="text-lg font-medium mb-1">Your Current CGPA</p>
+                <p id="current-cgpa-result" class="text-4xl font-extrabold text-blue-800" data-current-cgpa="0.00">0.00</p>
+                <p class="text-sm text-gray-600 mt-2 italic">
+                    (Calculated using the Standard Weighted Average Formula: Total Grade Points / Total Semester Credits)
+                </p>
+            </div>
+        </div>
+
+        <!-- Future SGPA Predictor -->
+        <div id="future-predictor" class="bg-white p-6 md:p-8 rounded-xl card transition duration-300">
+            <h2 class="text-2xl font-bold mb-6 text-gray-700 border-b pb-3">Future SGPA Predictor</h2>
+            <p class="text-sm text-gray-600 mb-4">
+                Calculate the SGPA you need in the next semester to achieve a specific target CGPA.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="target-cgpa" class="block text-sm font-medium text-gray-700 mb-1">Target CGPA (e.g., 8.5)</label>
+                    <input type="number" id="target-cgpa" step="0.01" min="0" max="10" placeholder="8.2" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150">
+                </div>
+                <div>
+                    <label for="next-credits" class="block text-sm font-medium text-gray-700 mb-1">Next Semester Credits (e.g., 26)</label>
+                    <input type="number" id="next-credits" step="0.5" min="1" placeholder="26" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150">
+                </div>
+            </div>
+
+            <button onclick="calculateFutureSGPA()" class="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-200">
+                Calculate Required SGPA
+            </button>
+
+            <!-- Prediction Result -->
+            <div class="result-box mt-6 p-4 md:p-6 rounded-lg text-gray-800">
+                <p class="text-lg font-medium mb-1">Required SGPA for Target CGPA</p>
+                <p id="required-sgpa-result" class="text-4xl font-extrabold text-green-800">N/A</p>
+                <p id="prediction-message" class="text-sm text-gray-600 mt-2 italic">
+                    Enter values above to see the prediction.
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Global array to store semester data
+        let semesterData = [];
+        let semesterCounter = 0;
+
+        // Function to create an input row for a semester
+        function createSemesterInput(sgpa = '', credits = '') {
+            semesterCounter++;
+            const container = document.getElementById('semesters-container');
+            const row = document.createElement('div');
+            row.id = `sem-row-${semesterCounter}`;
+            row.className = 'flex flex-col sm:flex-row gap-3 bg-gray-50 p-4 rounded-lg items-center';
+
+            row.innerHTML = `
+                <div class="flex-shrink-0 text-gray-600 font-medium w-full sm:w-20 text-center sm:text-left">Sem ${semesterCounter}</div>
+                
+                <input type="number" step="0.01" min="0" max="10" placeholder="SGPA" value="${sgpa}" data-type="sgpa"
+                       class="sgpa-input w-full sm:w-28 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                       oninput="handleInputChange()">
+
+                <input type="number" step="0.5" min="1" placeholder="Credits" value="${credits}" data-type="credits"
+                       class="credits-input w-full sm:w-28 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                       oninput="handleInputChange()">
+
+                <button onclick="removeSemesterRow('${row.id}')"
+                        class="remove-btn text-red-500 hover:text-red-700 p-2 rounded-full transition duration-150 flex-shrink-0"
+                        title="Remove Semester">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+            `;
+            container.appendChild(row);
+            handleInputChange(); // Trigger calculation after adding
+        }
+
+        // Function to remove a semester input row
+        function removeSemesterRow(id) {
+            document.getElementById(id).remove();
+            // Re-label semesters after removal
+            const rows = document.getElementById('semesters-container').children;
+            semesterCounter = rows.length;
+            Array.from(rows).forEach((row, index) => {
+                row.querySelector('.flex-shrink-0').textContent = `Sem ${index + 1}`;
+            });
+            handleInputChange(); // Trigger calculation after removal
+        }
+
+        // Main handler for any input change in the CGPA section
+        function handleInputChange() {
+            collectData();
+            calculateCGPA();
+            // Recalculate prediction every time the current CGPA changes
+            calculateFutureSGPA();
+        }
+
+        // Collects all current semester data from the input fields
+        function collectData() {
+            semesterData = [];
+            const rows = document.getElementById('semesters-container').children;
+            
+            Array.from(rows).forEach(row => {
+                const sgpaInput = row.querySelector('.sgpa-input');
+                const creditsInput = row.querySelector('.credits-input');
+
+                const sgpa = parseFloat(sgpaInput.value);
+                const credits = parseFloat(creditsInput.value); // Credits for this specific semester
+                
+                if (sgpa > 0 && credits > 0) {
+                    semesterData.push({
+                        sgpa: sgpa,
+                        semCredits: credits, // Semester credits
+                    });
+                }
+            });
+        }
+
+        // Calculates CGPA using the Standard Weighted Average formula:
+        // CGPA = Σ(Semester Credits * SGPA) / Σ(Semester Credits)
+        function calculateCGPA() {
+            if (semesterData.length === 0) {
+                document.getElementById('current-cgpa-result').textContent = '0.00';
+                return;
+            }
+
+            let numeratorSum = 0; // Σ(Semester Credits * SGPA) (Total Grade Points)
+            let denominatorSum = 0; // Σ(Semester Credits) (Total Credits)
+
+            semesterData.forEach(sem => {
+                numeratorSum += (sem.semCredits * sem.sgpa);
+                denominatorSum += sem.semCredits;
+            });
+
+            let cgpa = 0.00;
+            if (denominatorSum > 0) {
+                cgpa = (numeratorSum / denominatorSum);
+            }
+
+            // Store the calculated CGPA value in a data attribute for the prediction logic to use
+            const resultElement = document.getElementById('current-cgpa-result');
+            resultElement.textContent = cgpa.toFixed(2);
+            resultElement.setAttribute('data-current-cgpa', cgpa);
+        }
+
+        // Calculates the required SGPA for the next semester
+        function calculateFutureSGPA() {
+            collectData(); // Ensure data is up to date
+
+            const targetCGPAInput = document.getElementById('target-cgpa').value;
+            const nextCreditsInput = document.getElementById('next-credits').value;
+            const requiredSGPAResult = document.getElementById('required-sgpa-result');
+            const predictionMessage = document.getElementById('prediction-message');
+            
+            // Get the precise calculated CGPA (e.g., 8.168...) from the standard calculation
+            const currentCGPAReported = parseFloat(document.getElementById('current-cgpa-result').getAttribute('data-current-cgpa')); 
+
+            const targetCGPA = parseFloat(targetCGPAInput);
+            const nextCredits = parseFloat(nextCreditsInput);
+
+            if (isNaN(targetCGPA) || isNaN(nextCredits) || nextCredits <= 0 || isNaN(currentCGPAReported)) {
+                requiredSGPAResult.textContent = 'N/A';
+                predictionMessage.textContent = 'Enter valid semester data, Target CGPA, and Next Credits to predict.';
+                return;
+            }
+
+            // --- 1. Calculate Standard Total Credits (TCC) and Total Grade Points (TGP) ---
+            let currentTotalCredits = 0;
+            let currentTotalGradePoints = 0;
+            
+            semesterData.forEach(sem => {
+                currentTotalCredits += sem.semCredits; 
+                currentTotalGradePoints += (sem.sgpa * sem.semCredits); 
+            });
+
+
+            if (currentTotalCredits === 0) {
+                requiredSGPAResult.textContent = 'N/A';
+                predictionMessage.textContent = 'Please enter semester data first.';
+                return;
+            }
+
+            // --- 2. Prediction Calculation (Standard Weighted Average Principle) ---
+            const newTotalCredits = currentTotalCredits + nextCredits;
+            const targetTotalGradePoints = targetCGPA * newTotalCredits;
+            const neededGradePoints = targetTotalGradePoints - currentTotalGradePoints;
+            const requiredSGPA = neededGradePoints / nextCredits;
+
+            // --- 3. Display Results ---
+            requiredSGPAResult.textContent = requiredSGPA.toFixed(2);
+
+            if (requiredSGPA > 10.0) {
+                requiredSGPAResult.textContent = 'Impossible';
+                predictionMessage.textContent = `To achieve a ${targetCGPA.toFixed(2)} CGPA, you would need an SGPA greater than 10.0. Consider adjusting your target.`;
+                requiredSGPAResult.classList.remove('text-green-800');
+                requiredSGPAResult.classList.add('text-red-600');
+            } else if (requiredSGPA < 0) {
+                requiredSGPAResult.textContent = 'Safe';
+                predictionMessage.textContent = `You only need an SGPA of 0.00 or higher in the next semester to reach your target of ${targetCGPA.toFixed(2)}.`;
+                requiredSGPAResult.classList.remove('text-red-600');
+                requiredSGPAResult.classList.add('text-green-800');
+            } else {
+                predictionMessage.textContent = `You must secure an SGPA of ${requiredSGPA.toFixed(2)} in the next ${nextCredits.toFixed(1)} credits to reach your overall target of ${targetCGPA.toFixed(2)} CGPA.`;
+                requiredSGPAResult.classList.remove('text-red-600');
+                requiredSGPAResult.classList.add('text-green-800');
+            }
+        }
+
+        // Add initial semester rows for a quick start
+        window.onload = () => {
+            document.getElementById('add-semester-btn').addEventListener('click', () => createSemesterInput());
+            
+            // Clear prediction input values
+            document.getElementById('target-cgpa').value = '';
+            document.getElementById('next-credits').value = '';
+
+            // Run initial calculations
+            handleInputChange(); 
+        };
+
+    </script>
+</body>
+</html>
