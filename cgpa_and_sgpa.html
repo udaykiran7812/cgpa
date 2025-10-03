@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Grade Point Toolkit</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary': '#2563EB', /* Blue-600 */
+                        'primary-dark': '#1D4ED8',
+                        'success': '#10b981',
+                        'error': '#ef4444',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar styling for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        /* Grid for SGPA subject inputs */
+        .subject-grid {
+            display: grid;
+            grid-template-columns: 1fr 90px 90px 40px; /* Subject | Credits | Grade Point | Remove */
+            gap: 8px;
+            align-items: center;
+        }
+        /* Custom styling for inputs */
+        .input-text {
+            border: 1px solid #e5e7eb;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            transition: all 0.2s;
+        }
+        .input-text:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        /* CGPA result box style */
+        .result-box {
+            background-color: #e0f2fe; /* Light Blue-100 */
+            border-left: 6px solid #2563EB;
+        }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .tab-button.active {
+            border-bottom: 3px solid #2563EB;
+            color: #2563EB;
+            font-weight: 600;
+            background-color: #f7f9fb;
+        }
+        .sgpa-unit-header.collapsed {
+            border-bottom: 1px solid #e5e7eb;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans p-4 sm:p-8 min-h-screen">
+
+    <div class="max-w-4xl mx-auto bg-white p-6 md:p-10 rounded-xl shadow-2xl border border-gray-200">
+        <header class="text-center">
+            <h1 class="text-3xl font-extrabold text-gray-800 mb-2">
+                <span class="text-primary">Academic</span> Toolkit 🎓
+            </h1>
+            <p class="text-gray-500 mb-6">
+                Calculate your SGPA, track your CGPA, and predict your future scores.
+            </p>
+        </header>
+
+        <!-- Tab Navigation -->
+        <div class="flex border-b border-gray-200 mb-6 sticky top-0 bg-white z-10">
+            <button id="tab-cgpa-btn" onclick="showTab('cgpa')" class="tab-button active flex-1 py-3 text-lg transition-all duration-200 text-gray-600 hover:text-primary">
+                CGPA & Prediction
+            </button>
+            <button id="tab-sgpa-btn" onclick="showTab('sgpa')" class="tab-button flex-1 py-3 text-lg transition-all duration-200 text-gray-600 hover:text-primary">
+                SGPA Calculator
+            </button>
+        </div>
+
+        <!-- --- CGPA & Prediction Tab Content --- -->
+        <div id="tab-cgpa" class="tab-content space-y-8">
+            <div id="cgpa-calculator" class="transition duration-300">
+                <h2 class="text-2xl font-bold mb-4 text-gray-700">Semester Data Input</h2>
+
+                <div id="semesters-container" class="space-y-4 mb-6">
+                    <!-- Semester rows will be inserted here -->
+                </div>
+
+                <button id="add-semester-btn" class="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-4 rounded-lg transition duration-200">
+                    + Add Semester
+                </button>
+
+                <!-- CGPA Result -->
+                <div class="result-box mt-8 p-4 md:p-6 rounded-lg text-gray-800">
+                    <p class="text-lg font-medium mb-1">Your Current CGPA</p>
+                    <p id="current-cgpa-result" class="text-4xl font-extrabold text-blue-800" data-current-cgpa="0.00">0.00</p>
+                    <p class="text-sm text-gray-600 mt-2 italic">
+                        (Calculated using the Standard Weighted Average: Total Grade Points / Total Semester Credits)
+                    </p>
+                </div>
+            </div>
+
+            <!-- Future SGPA Predictor -->
+            <div id="future-predictor" class="transition duration-300">
+                <h2 class="text-2xl font-bold mb-4 text-gray-700 border-t pt-6 mt-6">Future SGPA Predictor</h2>
+                <p class="text-sm text-gray-600 mb-4">
+                    Calculate the SGPA you need in the next semester to achieve a specific target CGPA.
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="target-cgpa" class="block text-sm font-medium text-gray-700 mb-1">Target CGPA (e.g., 8.5)</label>
+                        <input type="number" id="target-cgpa" step="0.01" min="0" max="10" placeholder="8.2" class="input-text w-full">
+                    </div>
+                    <div>
+                        <label for="next-credits" class="block text-sm font-medium text-gray-700 mb-1">Next Semester Credits (e.g., 26)</label>
+                        <input type="number" id="next-credits" step="0.5" min="1" placeholder="26" class="input-text w-full">
+                    </div>
+                </div>
+
+                <button onclick="calculateFutureSGPA()" class="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-200">
+                    Calculate Required SGPA
+                </button>
+
+                <!-- Prediction Result -->
+                <div class="result-box mt-6 p-4 md:p-6 rounded-lg text-gray-800" style="border-left-color: #10b981;">
+                    <p class="text-lg font-medium mb-1">Required SGPA for Target CGPA</p>
+                    <p id="required-sgpa-result" class="text-4xl font-extrabold text-green-800">N/A</p>
+                    <p id="prediction-message" class="text-sm text-gray-600 mt-2 italic">
+                        Enter values above to see the prediction.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- --- SGPA Calculator Tab Content --- -->
+        <div id="tab-sgpa" class="tab-content hidden">
+            <h2 class="text-2xl font-bold mb-4 text-gray-700">Multi-Semester SGPA Calculator</h2>
+            <p class="text-gray-500 mb-6">
+                Calculate the SGPA for multiple semesters based on individual subject grades.
+            </p>
+
+            <button onclick="addSGPASemesterUnit()" 
+                    class="w-full mb-6 px-6 py-3 bg-primary text-white font-medium rounded-lg shadow-md hover:bg-primary-dark transition duration-150 ease-in-out transform hover:scale-[1.01]">
+                + Add New Semester for SGPA Calculation
+            </button>
+
+            <div id="sgpa-semesters-container" class="space-y-6">
+                <!-- SGPA Semester Units will be inserted here -->
+            </div>
+            
+        </div>
+        
+        <!-- Floating Message Box (for alerts/errors) -->
+        <div id="message-box" class="fixed bottom-4 right-4 p-4 rounded-lg text-white font-medium shadow-xl hidden transition-opacity duration-300 opacity-0" role="alert"></div>
+
+    </div>
+
+    <script>
+        // --- Global Counters ---
+        let semesterCounter = 0; // for CGPA tab
+        let sgpaUnitCounter = 0; // for SGPA tab
+
+        // --- Shared Utility Functions ---
+        function showMessage(text, type = 'error', duration = 3000) {
+            const box = document.getElementById('message-box');
+            box.textContent = text;
+            
+            box.classList.remove('bg-error', 'bg-success', 'hidden', 'opacity-0');
+            box.classList.add(type === 'success' ? 'bg-success' : 'bg-error', 'opacity-100');
+
+            clearTimeout(box.timeout);
+            box.timeout = setTimeout(() => {
+                box.classList.remove('opacity-100');
+                box.classList.add('opacity-0');
+                setTimeout(() => box.classList.add('hidden'), 300);
+            }, duration);
+        }
+
+        // --- Tab Switching Logic ---
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(`tab-${tabId}-btn`).classList.add('active');
+
+            // If switching to SGPA, ensure the container has at least one unit
+            if (tabId === 'sgpa' && document.getElementById('sgpa-semesters-container').children.length === 0) {
+                 addSGPASemesterUnit();
+            }
+        }
+
+
+        // --- SGPA Calculator Logic (Subject-Level for Multiple Semesters) ---
+
+        // Toggles visibility of the subject input area
+        function toggleSGPADetails(unitId) {
+            const container = document.getElementById(`subjects-container-${unitId}`).closest('.details-container');
+            const button = document.getElementById(`toggle-btn-${unitId}`);
+            
+            container.classList.toggle('hidden');
+            button.classList.toggle('rotate-180');
+        }
+
+        // Creates the HTML structure for a single SGPA calculation unit
+        function addSGPASemesterUnit() {
+            sgpaUnitCounter++;
+            const unitId = `sgpa-unit-${sgpaUnitCounter}`;
+            const container = document.getElementById('sgpa-semesters-container');
+            const unit = document.createElement('div');
+            unit.id = unitId;
+            unit.className = 'bg-white p-4 rounded-xl shadow-lg border border-gray-200 transition duration-300';
+            
+            unit.innerHTML = `
+                <div id="header-${unitId}" onclick="toggleSGPADetails('${unitId}')" 
+                     class="sgpa-unit-header flex justify-between items-center cursor-pointer p-2 rounded-lg hover:bg-gray-50 transition duration-150">
+                    
+                    <h3 class="text-xl font-bold text-gray-700">
+                        Semester ${sgpaUnitCounter} SGPA
+                    </h3>
+                    <div class="flex items-center space-x-4">
+                         <span id="sgpa-summary-${unitId}" class="text-lg font-medium text-primary">SGPA: N/A</span>
+                         <button id="toggle-btn-${unitId}" class="p-1 text-gray-500 transform transition duration-200" title="Toggle Details">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="details-container mt-4 border-t pt-4">
+                    <!-- Input Headers -->
+                    <div class="subject-grid font-semibold text-gray-600 border-b pb-2 mb-4">
+                        <div class="text-left">Subject Name</div>
+                        <div class="text-center">Credits</div>
+                        <div class="text-center">Grade Point</div>
+                        <div></div>
+                    </div>
+
+                    <!-- Subjects Container -->
+                    <div id="subjects-container-${unitId}" class="space-y-3 max-h-72 overflow-y-auto pr-2">
+                        <!-- Subject rows are added by JS -->
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="mt-6 flex flex-col sm:flex-row gap-4">
+                        <button onclick="addSubjectRow('${unitId}')" 
+                                class="flex-1 px-6 py-3 bg-primary/90 text-white font-medium rounded-lg shadow-sm hover:bg-primary-dark transition duration-150">
+                            + Add Subject
+                        </button>
+                        <button onclick="calculateSGPA('${unitId}')" 
+                                class="flex-1 px-6 py-3 bg-success text-white font-bold rounded-lg shadow-sm hover:bg-success/90 transition duration-150">
+                            Calculate SGPA
+                        </button>
+                    </div>
+
+                    <!-- Result Display -->
+                    <div id="sgpa-result-${unitId}" class="mt-4 p-3 text-center rounded-lg border-2 border-primary bg-primary/10 text-primary font-bold text-lg transition-all duration-300">
+                        Click 'Calculate SGPA' to see the result.
+                    </div>
+
+                </div>
+            `;
+            container.appendChild(unit);
+            
+            // Add initial empty subject row to the new unit
+            addSubjectRow(unitId);
+        }
+
+        // Removes a single SGPA calculation unit
+        function removeSGPASemesterUnit(unitId) {
+            const container = document.getElementById('sgpa-semesters-container');
+            const unit = document.getElementById(unitId);
+            
+            if (container.children.length > 1) {
+                unit.remove();
+                // Re-label semesters after removal
+                Array.from(container.children).forEach((row, index) => {
+                    row.querySelector('h3').textContent = `Semester ${index + 1} SGPA`;
+                });
+                sgpaUnitCounter = container.children.length; // Reset counter based on number of remaining elements
+                showMessage("Semester calculation removed.", 'success', 2000);
+            } else {
+                showMessage("You must keep at least one semester calculation unit.", 'error');
+            }
+        }
+        
+        // Creates a subject row, requires the unitId to know where to place it
+        function createSubjectRow(unitId, subjectName = '', credits = '', gradePoint = '') {
+            const row = document.createElement('div');
+            row.className = 'subject-row subject-grid bg-white p-2 rounded-lg hover:bg-gray-50 transition duration-150 border border-gray-100';
+            
+            row.innerHTML = `
+                <input type="text" name="subject" placeholder="Subject Name" value="${subjectName}" class="input-text w-full text-sm">
+                <input type="number" name="credits" placeholder="C" value="${credits}" step="0.5" min="1" class="input-text text-center w-full text-sm">
+                <input type="number" name="gradePoint" placeholder="GP" value="${gradePoint}" step="1" min="0" max="10" class="input-text text-center w-full text-sm">
+                <button onclick="removeSubjectRow(this)" class="p-1 text-gray-400 hover:text-error transition duration-150" title="Remove Subject">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mx-auto" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 10-2 0v6a1 1 0 102 0V8z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            `;
+            return row;
+        }
+        
+        // Adds a subject row to the specified unit
+        function addSubjectRow(unitId, subject = '', credits = '', gradePoint = '') {
+            const container = document.getElementById(`subjects-container-${unitId}`);
+            container.appendChild(createSubjectRow(unitId, subject, credits, gradePoint));
+        }
+
+        // Removes a subject row from any unit
+        function removeSubjectRow(buttonElement) {
+            const container = buttonElement.closest('.details-container').querySelector('.space-y-3');
+            if (container.children.length > 1) {
+                buttonElement.closest('.subject-row').remove();
+            } else {
+                showMessage("You must keep at least one subject row.", 'error');
+            }
+        }
+
+        // Calculates SGPA for a specific unit
+        function calculateSGPA(unitId) {
+            const rows = document.querySelectorAll(`#subjects-container-${unitId} .subject-row`);
+            let totalProduct = 0;
+            let totalCredits = 0;
+            let valid = true;
+            
+            const resultDiv = document.getElementById(`sgpa-result-${unitId}`);
+            const summarySpan = document.getElementById(`sgpa-summary-${unitId}`);
+            
+            resultDiv.classList.remove('bg-error/10', 'border-error', 'bg-success/10', 'border-success', 'text-success');
+            resultDiv.classList.add('bg-primary/10', 'border-primary', 'text-primary');
+
+            if (rows.length === 0) {
+                showMessage("Please add at least one subject.", 'error');
+                return;
+            }
+
+            rows.forEach(row => {
+                const creditsInput = row.querySelector('input[name="credits"]');
+                const gradePointInput = row.querySelector('input[name="gradePoint"]');
+                
+                creditsInput.classList.remove('border-error');
+                gradePointInput.classList.remove('border-error');
+
+                const credits = parseFloat(creditsInput.value);
+                const gradePoint = parseFloat(gradePointInput.value);
+
+                if (isNaN(credits) || credits <= 0) {
+                    creditsInput.classList.add('border-error');
+                    valid = false;
+                }
+                if (isNaN(gradePoint) || gradePoint < 0 || gradePoint > 10) { 
+                    gradePointInput.classList.add('border-error');
+                    valid = false;
+                }
+
+                if (valid) {
+                    totalProduct += credits * gradePoint;
+                    totalCredits += credits;
+                }
+            });
+
+            if (!valid) {
+                resultDiv.textContent = "Error: Check highlighted fields (Credits > 0, Grade Points 0-10).";
+                resultDiv.classList.remove('bg-primary/10', 'border-primary', 'text-primary');
+                resultDiv.classList.add('bg-error/10', 'border-error');
+                summarySpan.textContent = 'SGPA: Error';
+                showMessage("Input error in current semester. Check the highlighted fields.", 'error');
+                return;
+            }
+
+            if (totalCredits === 0) {
+                resultDiv.textContent = "Error: Total credits cannot be zero.";
+                resultDiv.classList.remove('bg-primary/10', 'border-primary', 'text-primary');
+                resultDiv.classList.add('bg-error/10', 'border-error');
+                summarySpan.textContent = 'SGPA: Error';
+                showMessage("Total credits must be greater than zero.", 'error');
+                return;
+            }
+
+            const sgpa = totalProduct / totalCredits;
+            
+            // Display result
+            const totalCreditsFixed = totalCredits.toFixed(1);
+            const sgpaFixed = sgpa.toFixed(2);
+
+            resultDiv.innerHTML = `SGPA: ${sgpaFixed} | Total Credits: ${totalCreditsFixed}`;
+            resultDiv.classList.remove('bg-primary/10', 'border-primary', 'text-primary');
+            resultDiv.classList.add('bg-success/10', 'border-success', 'text-success');
+            
+            summarySpan.textContent = `SGPA: ${sgpaFixed} (${totalCreditsFixed} Cr.)`;
+            summarySpan.classList.add('text-success');
+            summarySpan.classList.remove('text-primary');
+
+            showMessage("SGPA Calculated Successfully!", 'success', 2000);
+        }
+
+
+        // --- CGPA Calculator & Predictor Logic (Semester-Level) ---
+        let semesterData = [];
+
+        function createSemesterInput(sgpa = '', credits = '') {
+            semesterCounter++;
+            const container = document.getElementById('semesters-container');
+            const row = document.createElement('div');
+            row.id = `sem-row-${semesterCounter}`;
+            row.className = 'flex flex-col sm:flex-row gap-3 bg-gray-50 p-4 rounded-lg items-center';
+
+            row.innerHTML = `
+                <div class="flex-shrink-0 text-gray-600 font-medium w-full sm:w-20 text-center sm:text-left">Sem ${semesterCounter}</div>
+                
+                <input type="number" step="0.01" min="0" max="10" placeholder="SGPA" value="${sgpa}" data-type="sgpa"
+                       class="sgpa-input input-text w-full sm:w-28"
+                       oninput="handleCGPAInputChange()">
+
+                <input type="number" step="0.5" min="1" placeholder="Credits" value="${credits}" data-type="credits"
+                       class="credits-input input-text w-full sm:w-28"
+                       oninput="handleCGPAInputChange()">
+
+                <button onclick="removeSemesterRow('${row.id}')"
+                        class="remove-btn text-red-500 hover:text-red-700 p-2 rounded-full transition duration-150 flex-shrink-0"
+                        title="Remove Semester">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+            `;
+            container.appendChild(row);
+            handleCGPAInputChange();
+        }
+
+        function removeSemesterRow(id) {
+            document.getElementById(id).remove();
+            const rows = document.getElementById('semesters-container').children;
+            semesterCounter = rows.length;
+            Array.from(rows).forEach((row, index) => {
+                row.querySelector('.flex-shrink-0').textContent = `Sem ${index + 1}`;
+            });
+            handleCGPAInputChange();
+        }
+
+        function handleCGPAInputChange() {
+            collectCGPAData();
+            calculateCGPA();
+            calculateFutureSGPA();
+        }
+
+        function collectCGPAData() {
+            semesterData = [];
+            const rows = document.getElementById('semesters-container').children;
+            
+            Array.from(rows).forEach(row => {
+                const sgpa = parseFloat(row.querySelector('.sgpa-input').value);
+                const credits = parseFloat(row.querySelector('.credits-input').value);
+                
+                if (sgpa > 0 && credits > 0) {
+                    semesterData.push({
+                        sgpa: sgpa,
+                        semCredits: credits,
+                    });
+                }
+            });
+        }
+
+        function calculateCGPA() {
+            if (semesterData.length === 0) {
+                document.getElementById('current-cgpa-result').textContent = '0.00';
+                document.getElementById('current-cgpa-result').setAttribute('data-current-cgpa', 0);
+                return;
+            }
+
+            let totalGradePoints = 0;
+            let totalCredits = 0;
+
+            semesterData.forEach(sem => {
+                totalGradePoints += (sem.semCredits * sem.sgpa);
+                totalCredits += sem.semCredits;
+            });
+
+            let cgpa = 0.00;
+            if (totalCredits > 0) {
+                cgpa = (totalGradePoints / totalCredits);
+            }
+
+            const resultElement = document.getElementById('current-cgpa-result');
+            resultElement.textContent = cgpa.toFixed(2);
+            resultElement.setAttribute('data-current-cgpa', cgpa);
+        }
+
+        function calculateFutureSGPA() {
+            collectCGPAData();
+
+            const targetCGPA = parseFloat(document.getElementById('target-cgpa').value);
+            const nextCredits = parseFloat(document.getElementById('next-credits').value);
+            const requiredSGPAResult = document.getElementById('required-sgpa-result');
+            const predictionMessage = document.getElementById('prediction-message');
+            
+            const currentCGPAReported = parseFloat(document.getElementById('current-cgpa-result').getAttribute('data-current-cgpa')); 
+
+            if (isNaN(targetCGPA) || isNaN(nextCredits) || nextCredits <= 0 || isNaN(currentCGPAReported) || semesterData.length === 0) {
+                requiredSGPAResult.textContent = 'N/A';
+                predictionMessage.textContent = 'Enter semester data, Target CGPA, and Next Credits to predict.';
+                return;
+            }
+
+            let currentTotalCredits = 0;
+            let currentTotalGradePoints = 0;
+            
+            semesterData.forEach(sem => {
+                currentTotalCredits += sem.semCredits; 
+                currentTotalGradePoints += (sem.sgpa * sem.semCredits); 
+            });
+
+            if (currentTotalCredits === 0) {
+                requiredSGPAResult.textContent = 'N/A';
+                predictionMessage.textContent = 'Please enter semester data first.';
+                return;
+            }
+
+            const newTotalCredits = currentTotalCredits + nextCredits;
+            const targetTotalGradePoints = targetCGPA * newTotalCredits;
+            const neededGradePoints = targetTotalGradePoints - currentTotalGradePoints;
+            const requiredSGPA = neededGradePoints / nextCredits;
+
+            requiredSGPAResult.textContent = requiredSGPA.toFixed(2);
+
+            if (requiredSGPA > 10.0) {
+                requiredSGPAResult.textContent = 'Impossible';
+                predictionMessage.textContent = `To achieve a ${targetCGPA.toFixed(2)} CGPA, you would need an SGPA greater than 10.0. Consider adjusting your target.`;
+                requiredSGPAResult.classList.remove('text-green-800');
+                requiredSGPAResult.classList.add('text-red-600');
+            } else if (requiredSGPA < 0) {
+                requiredSGPAResult.textContent = 'Safe (0.00)';
+                predictionMessage.textContent = `You only need an SGPA of 0.00 or higher in the next semester to reach your target of ${targetCGPA.toFixed(2)}.`;
+                requiredSGPAResult.classList.remove('text-red-600');
+                requiredSGPAResult.classList.add('text-green-800');
+            } else {
+                predictionMessage.textContent = `You must secure an SGPA of ${requiredSGPA.toFixed(2)} in the next ${nextCredits.toFixed(1)} credits to reach your overall target of ${targetCGPA.toFixed(2)} CGPA.`;
+                requiredSGPAResult.classList.remove('text-red-600');
+                requiredSGPAResult.classList.add('text-green-800');
+            }
+        }
+
+        // --- Initialization ---
+        window.onload = () => {
+            // Set up CGPA button listeners
+            document.getElementById('add-semester-btn').addEventListener('click', () => createSemesterInput());
+            document.getElementById('target-cgpa').addEventListener('input', calculateFutureSGPA);
+            document.getElementById('next-credits').addEventListener('input', calculateFutureSGPA);
+            
+            // Show the default CGPA tab
+            showTab('cgpa'); 
+            
+            // Run initial CGPA calculations (will show 0.00/N/A)
+            handleCGPAInputChange(); 
+        };
+    </script>
+</body>
+</html>
